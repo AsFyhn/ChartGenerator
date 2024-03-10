@@ -1,0 +1,45 @@
+import pandas as pd 
+from datetime import datetime
+import plotly.express as px
+import plotly.graph_objects as go
+from statsmodels.api import tsa
+input_df = pd.read_clipboard()
+
+
+
+df = (input_df.T.reset_index())
+df.columns = df.iloc[0]
+df = df.iloc[1:]
+
+df['Year'] = df['Year'].astype(str)
+df['Year'] = df['Year'].str.split('.').apply(lambda x: x[0])
+
+df['Month'] = df['Month'].astype(str)
+
+df['Date'] = df['Year'] + '/' + df['Month'] +'/01'
+
+df['Date'] = pd.to_datetime(df['Date'],format='%Y/%m/%d')
+
+df['value'] = df['value'].astype(int)
+res = tsa.seasonal_decompose(df.set_index('Date')['value'])
+df['value_sa'] = (res.trend.to_frame()).reset_index(drop=True)
+
+
+fig = go.Scatter(
+    x=df['Date'],
+    y=df['value'],
+    mode='lines',
+    marker={'color':'rgba(100,100,100,0.1)'}
+    )
+fig1 = go.Scatter(
+    x=[df['Date'].iloc[-1]],
+    y=[df['value'].iloc[-1]],
+    # marker={'color':'rgba(100,100,100,0.2)'}
+    )
+fig2 = go.Scatter(
+    x=df['Date'],
+    y=df['value_sa'],
+    mode='lines',
+    marker={'color':'rgba(255,0,0,1)'}
+    )
+go.Figure().add_trace(fig).add_trace(fig1).add_trace(fig2).show()
